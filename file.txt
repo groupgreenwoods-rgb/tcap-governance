@@ -1,0 +1,35 @@
+import os
+import hashlib
+import time
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+class MotorGovernançaGlobal:
+    def __init__(self):
+        self._ciclo = 0
+
+    def processar(self, entrada):
+        if any(ruido in entrada.lower() for ruido in ["acho", "talvez", "dúvida", "não sei"]):
+            return {"status": "ERRO", "msg": "VIOLAÇÃO: NÚCLEO SELADO"}
+        
+        self._ciclo += 1
+        res = f"TCAP_CICLO_{self._ciclo}: Estado processado sob coerência QFM."
+        h = hashlib.sha256(f"{entrada}{res}{time.time()}".encode()).hexdigest()[:16]
+        return {"status": "CONFORMIDADE_QFM", "resposta": f"{res} | SIG-15R-QFM: {h}"}
+
+motor = MotorGovernançaGlobal()
+
+@app.route('/tcap/processar', methods=['POST'])
+def api_tcap():
+    data = request.json
+    if not data or 'input' not in data:
+        return jsonify({"status": "ERRO", "msg": "Entrada obrigatória"}), 400
+    return jsonify(motor.processar(data.get("input", "")))
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
+
+Flask
+gunicorn
